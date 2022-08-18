@@ -20,7 +20,7 @@ const message = (args: ValidationArguments): string => {
   if (!args.value.match(/(?=.*?[#?!@$%^&*-])/)) {
     qMessage.push('special character');
   }
-  return `Passwort must contain(s) one or more ${qMessage.join(', ')}`;
+  return `password must contain(s) one or more ${qMessage.join(', ')}`;
 };
 
 export class CreateUserDto {

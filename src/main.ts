@@ -5,23 +5,26 @@ import {
 } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
-import {
-  BadRequestException,
-  ValidationError,
-  ValidationPipe,
-} from '@nestjs/common';
+import { ValidationError, ValidationPipe } from '@nestjs/common';
+import { ValidationException, ValidationFilter } from './validation.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: false }),
   );
+  app.useGlobalFilters(new ValidationFilter());
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
       validationError: { target: false, value: false },
-      exceptionFactory: (validationErrors: ValidationError[] = []) => {
-        return new BadRequestException(validationErrors);
+      skipMissingProperties: false,
+      exceptionFactory: (errors: ValidationError[]) => {
+        const errMsg = {};
+        errors.forEach((err) => {
+          errMsg[err.property] = [...Object.values(err.constraints)].reverse();
+        });
+        return new ValidationException(errMsg);
       },
     }),
   );

@@ -1,3 +1,4 @@
+import { JwtAuthGuard } from './../auth/jwt-auth.guard';
 import {
   Body,
   Controller,
@@ -7,6 +8,7 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -14,8 +16,11 @@ import { BooksService } from './books.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { FilterBookDto } from './dto/filter-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { GetUser } from 'src/users/get-user.decorator';
+import { User } from '@prisma/client';
 
 @Controller('books')
+@UseGuards(JwtAuthGuard)
 export class BooksController {
   private booksService: BooksService;
   constructor(booksService: BooksService) {
@@ -23,7 +28,8 @@ export class BooksController {
   }
 
   @Get()
-  getBooks(@Query() filter: FilterBookDto) {
+  getBooks(@Query() filter: FilterBookDto, @GetUser() user: User) {
+    console.log(user);
     return this.booksService.books(filter);
   }
 

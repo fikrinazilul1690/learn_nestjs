@@ -21,17 +21,19 @@ export class UsersService {
     });
   }
 
-  async validateUser(email: string, password: string): Promise<User> {
-    const user = await this.prisma.user.findUniqueOrThrow({
+  async findUserById(id: string): Promise<User> {
+    return await this.prisma.user.findUnique({
       where: {
-        email,
+        id,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: true,
+        salt: true,
+        RefreshToken: true,
       },
     });
-
-    const validPassword = await bcrypt.compare(password, user?.password);
-
-    if (user && validPassword) return user;
-
-    return null;
   }
 }

@@ -1,22 +1,24 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { RefreshTokenService } from 'src/refresh-token/refresh-token.service';
 import { TokenService } from 'src/token/token.service';
-import { UsersService } from 'src/users/users.service';
+import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { RefreshAccessTokenDto } from './dto/refresh-access-token.dto';
 import { LoginResponse } from './interfaces/login-response.interface';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly usersService: UsersService,
+    private readonly prisma: PrismaService,
     private readonly token: TokenService,
     private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
   async login(loginDto: LoginDto): Promise<LoginResponse> {
     const { email, password } = loginDto;
-    const user = await this.usersService.validateUser(email, password);
+    const user = await this.validateUser(email, password);
 
     if (!user) {
       throw new UnauthorizedException('Wrong email or password');
@@ -47,5 +49,31 @@ export class AuthService {
     const access_token = await this.token.createAccessToken(refreshToken.user);
 
     return { access_token };
+  }
+
+  async validateUser(email: string, password: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: true,
+        salt: true,
+        RefreshToken: true,
+      },
+    });
+
+    const validPassword = await bcrypt.compare(password, user?.password);
+
+    if (user && validPassword) return user;
+
+    return null;
+  }
+
+  async revokeRefreshToken(id: string): Promise<void> {
+    await this.refreshTokenService.revoke(id);
   }
 }

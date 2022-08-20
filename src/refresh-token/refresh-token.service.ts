@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -23,7 +23,7 @@ export class RefreshTokenService {
   }
 
   async findOne(id: string) {
-    const refreshToken = await this.prisma.refreshToken.findUnique({
+    const findRefreshToken = await this.prisma.refreshToken.findUnique({
       where: {
         id,
       },
@@ -32,6 +32,21 @@ export class RefreshTokenService {
       },
     });
 
-    return refreshToken;
+    return findRefreshToken;
+  }
+
+  async revoke(id: string) {
+    const refreshToken = await this.findOne(id);
+    if (!refreshToken) {
+      throw new NotFoundException();
+    }
+    return await this.prisma.refreshToken.update({
+      where: {
+        id: refreshToken.id,
+      },
+      data: {
+        isRevoked: true,
+      },
+    });
   }
 }
